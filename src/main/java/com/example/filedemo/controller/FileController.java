@@ -1,5 +1,6 @@
 package com.example.filedemo.controller;
 
+import com.example.filedemo.payload.DownloadFileResponse;
 import com.example.filedemo.payload.UploadFileResponse;
 import com.example.filedemo.service.FileStorageService;
 import org.slf4j.Logger;
@@ -48,11 +49,22 @@ public class FileController {
                 .collect(Collectors.toList());
     }
 
+
+    @GetMapping("/listGame")
+    public List<DownloadFileResponse> uploadMultipleFiles() {
+        List<DownloadFileResponse> list = fileStorageService.getListFileFolderDownload();
+        for ( DownloadFileResponse downloadFileResponse: list
+             ) {
+            System.out.println(downloadFileResponse.toString());
+
+        }
+        return list;
+    }
+
     @GetMapping("/downloadFile/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
         // Load file as Resource
         Resource resource = fileStorageService.loadFileAsResource(fileName);
-
         // Try to determine file's content type
         String contentType = null;
         try {
@@ -70,6 +82,11 @@ public class FileController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
+
+//        List<Attachment> attachments = new LinkedList<>();
+//        attachments.add(new Attachment("root", "application/json", service.getEntity(name)));
+//        attachments.add(new Attachment("image", "application/octet-stream", service.getEntityData(name)));
+//        return new MultipartBody(attachments, true);
     }
 
 }

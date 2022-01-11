@@ -2,6 +2,7 @@ package com.example.filedemo.service;
 
 import com.example.filedemo.exception.FileStorageException;
 import com.example.filedemo.exception.MyFileNotFoundException;
+import com.example.filedemo.payload.DownloadFileResponse;
 import com.example.filedemo.property.FileStorageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -9,12 +10,18 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -55,9 +62,13 @@ public class FileStorageService {
 
     public Resource loadFileAsResource(String fileName) {
         try {
+
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
+
             if(resource.exists()) {
+
+
                 return resource;
             } else {
                 throw new MyFileNotFoundException("File not found " + fileName);
@@ -65,5 +76,30 @@ public class FileStorageService {
         } catch (MalformedURLException ex) {
             throw new MyFileNotFoundException("File not found " + fileName, ex);
         }
+    }
+    public List<DownloadFileResponse> getListFileFolderDownload(){
+        Path filePath = this.fileStorageLocation.normalize();
+        System.out.println("filePath :  " + filePath);
+        List<DownloadFileResponse> listDownloadFile = new ArrayList<>();
+        File folder = new File(filePath+"");
+        File[] listOfFiles = folder.listFiles();
+        String uniqueID = UUID.randomUUID().toString();
+
+        String logo = "https://www.elcom.com.vn/wp-content/uploads/2020/09/logo-elcom_orig.png";
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                String nameFile = listOfFiles[i].getName();
+                String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/downloadFile/")
+                        .path(nameFile)
+                        .toUriString();
+                String nameGame = nameFile.substring(0,nameFile.length()-4);
+                listDownloadFile.add(new DownloadFileResponse(uniqueID,nameGame, fileDownloadUri, logo));
+                System.out.println("fileDownloadUri : " + fileDownloadUri);
+            } else if (listOfFiles[i].isDirectory()) {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+        return listDownloadFile;
     }
 }
