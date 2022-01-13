@@ -9,13 +9,9 @@ public class DownloadFileResponse {
     private String nameGame;
     private String urlDownload;
     private String logo;
-    public DownloadFileResponse(String id, String nameGame, String urlDownload, String logo) {
-        this.id = id;
-        this.nameGame = nameGame;
-        this.urlDownload = urlDownload;
-        this.logo = logo;
-    }
 
+    public DownloadFileResponse() {
+    }
 
     public String getId() {
         return id;

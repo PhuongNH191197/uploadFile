@@ -12,14 +12,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,11 +25,13 @@ import java.util.UUID;
 public class FileStorageService {
 
     private final Path fileStorageLocation;
+    private final List<DownloadFileResponse> listDownloadFile;
 
     @Autowired
-    public FileStorageService(FileStorageProperties fileStorageProperties) {
+    public FileStorageService(FileStorageProperties fileStorageProperties, List<DownloadFileResponse> listDownloadFile) {
         this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
                 .toAbsolutePath().normalize();
+        this.listDownloadFile = listDownloadFile;
 
         try {
             Files.createDirectories(this.fileStorageLocation);
@@ -41,6 +41,8 @@ public class FileStorageService {
     }
 
     public String storeFile(MultipartFile file) {
+        System.out.println("GO HERE");
+
         // Normalize file name
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
@@ -53,7 +55,23 @@ public class FileStorageService {
             // Copy file to the target location (Replacing existing file with the same name)
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            DownloadFileResponse downloadFileResponse = new DownloadFileResponse();
+            String uniqueID1 = UUID.randomUUID().toString();
+            System.out.println("========uniqueID1 : " + uniqueID1);
+            downloadFileResponse.setId(uniqueID1);
+            System.out.println("randomUniqueId : " + downloadFileResponse.getId());
 
+            String logo = "https://www.elcom.com.vn/wp-content/uploads/2020/09/logo-elcom_orig.png";
+            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/downloadFile/")
+                    .path(fileName)
+                    .toUriString();
+            String nameGame = fileName.substring(0,fileName.length()-4);
+            downloadFileResponse.setNameGame(nameGame);
+            downloadFileResponse.setUrlDownload(fileDownloadUri);
+            downloadFileResponse.setLogo(logo);
+            listDownloadFile.add(downloadFileResponse);
+            System.out.println("fileDownloadUri : " + fileDownloadUri);
             return fileName;
         } catch (IOException ex) {
             throw new FileStorageException("Could not store file " + fileName + ". Please try again!", ex);
@@ -78,28 +96,6 @@ public class FileStorageService {
         }
     }
     public List<DownloadFileResponse> getListFileFolderDownload(){
-        Path filePath = this.fileStorageLocation.normalize();
-        System.out.println("filePath :  " + filePath);
-        List<DownloadFileResponse> listDownloadFile = new ArrayList<>();
-        File folder = new File(filePath+"");
-        File[] listOfFiles = folder.listFiles();
-        String uniqueID = UUID.randomUUID().toString();
-
-        String logo = "https://www.elcom.com.vn/wp-content/uploads/2020/09/logo-elcom_orig.png";
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                String nameFile = listOfFiles[i].getName();
-                String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/downloadFile/")
-                        .path(nameFile)
-                        .toUriString();
-                String nameGame = nameFile.substring(0,nameFile.length()-4);
-                listDownloadFile.add(new DownloadFileResponse(uniqueID,nameGame, fileDownloadUri, logo));
-                System.out.println("fileDownloadUri : " + fileDownloadUri);
-            } else if (listOfFiles[i].isDirectory()) {
-                System.out.println("Directory " + listOfFiles[i].getName());
-            }
-        }
         return listDownloadFile;
     }
 }
